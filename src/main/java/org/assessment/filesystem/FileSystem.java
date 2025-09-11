@@ -7,7 +7,6 @@ public class FileSystem {
     private final Directory root;
     private Directory currentDirectory;
 
-
     public FileSystem() {
         root = new Directory("/", null);
         currentDirectory = root;
@@ -15,8 +14,8 @@ public class FileSystem {
 
     private Directory navigateToParent(String path) {
         Directory dir = path.startsWith("/") ? root : currentDirectory;
-        String cleanPath  = path.startsWith("/") ? path.substring(1) : path;
-        String[] parts = cleanPath .split("/");
+        String cleanPath = path.startsWith("/") ? path.substring(1) : path;
+        String[] parts = cleanPath.split("/");
 
         for (int i = 0; i < parts.length - 1; i++) {
             String part = parts[i];
@@ -69,7 +68,7 @@ public class FileSystem {
                 }
             } else {
                 FileSystemItem item = dir.getItem(part);
-                if (!(item instanceof Directory)) {
+                if (!(item.isDirectory())) {
                     System.out.println("Directory not found: " + part);
                     return null;
                 }
@@ -88,27 +87,49 @@ public class FileSystem {
 
     public void touch(String path) {
         Directory parent = navigateToParent(path);
-        if (parent == null) return;
-
+        // if (parent == null) return;
         String fileName = lastSegment(path);
         FileSystemItem item = parent.getItem(fileName);
         if (item == null) {
             parent.addItem(new File(fileName, parent));
         } else {
-            System.out.println("File already exists: " + fileName);
+            throw new IllegalArgumentException("File already exists: " + fileName);
         }
     }
 
     public void ls() {
         for (FileSystemItem item : currentDirectory.getChildren()) {
-            System.out.println((item.isDirectory() ? "[DIR] " : "[FILE] ") + item.getName());
+            System.out.println((item.isDirectory() ? item.getName() + "/ " : item.getName()));
         }
     }
 
+    public void lsR() {
+        lsR(getCurrentPath());
+    }
+
+    private void lsR(String path) {
+        Directory dir = navigateTo(path);
+        if (dir == null) {
+            throw new IllegalArgumentException("Directory not found: " + path);
+        }
+
+        System.out.println(path + ":");
+
+        for (FileSystemItem item : dir.getChildren()) {
+            System.out.println(item.isDirectory() ? item.getName() + "/" : item.getName());
+        }
+
+        for (FileSystemItem item : dir.getChildren()) {
+            if (item.isDirectory()) {
+                lsR("/".equals(path) ? "/" + item.getName() : path + "/" + item.getName());
+            }
+        }
+    }
 
     public void mkdir(String path) {
         Directory parent = navigateToParent(path);
-        if (parent == null) return;
+        // if (parent == null)
+        // return;
 
         String dirName = lastSegment(path);
         FileSystemItem item = parent.getItem(dirName);
@@ -120,23 +141,24 @@ public class FileSystem {
     }
 
     public void pwd() {
+        System.out.println(getCurrentPath());
+    }
+
+    private String getCurrentPath() {
         List<String> path = new ArrayList<>();
         Directory dir = currentDirectory;
-        while (dir != null) {
+        while (dir != root) {
             path.add(0, dir.getName());
             dir = dir.getParent();
         }
         String result = String.join("/", path);
-
-        while (result.startsWith("//")) {
-            result = result.substring(1);
-        }
-        System.out.println(result);
+        return "/" + result;
     }
 
     public void rm(String path) {
         Directory parent = navigateToParent(path);
-        if (parent == null) return;
+        // if (parent == null)
+        // return;
 
         String itemName = lastSegment(path);
         FileSystemItem item = parent.getItem(itemName);
@@ -148,4 +170,3 @@ public class FileSystem {
     }
 
 }
-
