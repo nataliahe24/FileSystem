@@ -13,69 +13,19 @@ public class FileSystem {
     }
 
     private Directory navigateToParent(String path) {
-        Directory dir = path.startsWith("/") ? root : currentDirectory;
-        String cleanPath = path.startsWith("/") ? path.substring(1) : path;
-        String[] parts = cleanPath.split("/");
-
-        for (int i = 0; i < parts.length - 1; i++) {
-            String part = parts[i];
-            if (part.isEmpty() || ".".equals(part)) {
-                continue;
-            }
-            if ("..".equals(part)) {
-                if (dir.getParent() != null) {
-                    dir = dir.getParent();
-                } else {
-                    System.out.println("Cannot go above root directory");
-                    return null;
-                }
-            } else {
-                FileSystemItem item = dir.getItem(part);
-                if (!(item instanceof Directory)) {
-                    System.out.println("Directory not found: " + part);
-                    return null;
-                }
-                dir = (Directory) item;
-            }
-        }
-        return dir;
+        int limit = PathUtils.normalizePath(path).size() - 1;
+        return PathUtils.resolvePath(currentDirectory, path, limit);
     }
 
-    private String lastSegment(String path) {
+    private String lastItem(String path) {
         String cleanPath = path.startsWith("/") ? path.substring(1) : path;
         String[] parts = cleanPath.split("/");
         return parts[parts.length - 1];
     }
 
     private Directory navigateTo(String path) {
-        if ("/".equals(path)) {
-            return root;
-        }
-        Directory dir = path.startsWith("/") ? root : currentDirectory;
-        String cleanPath = path.startsWith("/") ? path.substring(1) : path;
-        String[] parts = cleanPath.split("/");
-
-        for (String part : parts) {
-            if (part.isEmpty() || ".".equals(part)) {
-                continue;
-            }
-            if ("..".equals(part)) {
-                if (dir.getParent() != null) {
-                    dir = dir.getParent();
-                } else {
-                    System.out.println("Already at root directory");
-                    return null;
-                }
-            } else {
-                FileSystemItem item = dir.getItem(part);
-                if (!(item.isDirectory())) {
-                    System.out.println("Directory not found: " + part);
-                    return null;
-                }
-                dir = (Directory) item;
-            }
-        }
-        return dir;
+        int limit = PathUtils.normalizePath(path).size();
+        return PathUtils.resolvePath(currentDirectory, path, limit);
     }
 
     public void cd(String path) {
@@ -87,8 +37,7 @@ public class FileSystem {
 
     public void touch(String path) {
         Directory parent = navigateToParent(path);
-        // if (parent == null) return;
-        String fileName = lastSegment(path);
+        String fileName = lastItem(path);
         FileSystemItem item = parent.getItem(fileName);
         if (item == null) {
             parent.addItem(new File(fileName, parent));
@@ -128,10 +77,7 @@ public class FileSystem {
 
     public void mkdir(String path) {
         Directory parent = navigateToParent(path);
-        // if (parent == null)
-        // return;
-
-        String dirName = lastSegment(path);
+        String dirName = lastItem(path);
         FileSystemItem item = parent.getItem(dirName);
         if (item == null) {
             parent.addItem(new Directory(dirName, parent));
@@ -157,10 +103,7 @@ public class FileSystem {
 
     public void rm(String path) {
         Directory parent = navigateToParent(path);
-        // if (parent == null)
-        // return;
-
-        String itemName = lastSegment(path);
+        String itemName = lastItem(path);
         FileSystemItem item = parent.getItem(itemName);
         if (item != null) {
             parent.removeItem(itemName);
