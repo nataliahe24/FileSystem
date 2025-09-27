@@ -19,18 +19,21 @@ public class Directory extends FileSystemItem {
         children.add(item);
     }
 
-
     public void removeItem(String itemName) {
         children.removeIf(item -> item.getName().equals(itemName));
     }
 
-    public FileSystemItem getItem(String name) {
-        for (FileSystemItem item : children) {
-            if (item.getName().equals(name)) {
-                return item;
-            }
-        }
-        return null;
+    public FileSystemItem getItem(String itemName) {
+        return children.stream()
+                .filter(item -> item.getName().equals(itemName))
+                .findFirst().orElse(null);
+    }
+
+    public Directory getDirectory(String itemName) {
+        return children.stream()
+                .filter(item -> item.getName().equals(itemName) && item.isDirectory())
+                .findFirst().map(item -> (Directory) item)
+                .orElseThrow(() -> new IllegalArgumentException(itemName + ": Not a directory"));
     }
 
     @Override
